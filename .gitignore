@@ -2,6 +2,10 @@
 # GitHub App private keys
 *.pem
 *.key
+runtime/
+*.credential
+paperclip-api-key
+config.local.json
 
 logs
 *.log

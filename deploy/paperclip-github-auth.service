@@ -1,0 +1,27 @@
+[Unit]
+Description=GitHub App credentials for Paperclip (independent service)
+After=network-online.target paperclip.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=paperclip-github-auth
+Group=paperclip-github-auth
+EnvironmentFile=/etc/paperclip-github-auth/service.env
+ExecStart=/usr/bin/node /opt/paperclip-github-auth/broker.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

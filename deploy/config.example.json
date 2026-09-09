@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "port": 3199,
+  "paperclip": {
+    "url": "http://127.0.0.1:3100",
+    "apiKeyPath": "/etc/paperclip-github-auth/paperclip-api-key"
+  },
+  "targets": [],
+  "clients": []
+}

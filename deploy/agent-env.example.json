@@ -1,0 +1,16 @@
+{
+  "GH_TOKEN": { "type": "secret_ref", "secretId": "REPLACE_GITHUB_SECRET_ID", "version": "latest" },
+  "PAPERCLIP_GITHUB_BROKER_TOKEN": { "type": "secret_ref", "secretId": "REPLACE_BROKER_SECRET_ID", "version": "latest" },
+  "PAPERCLIP_GITHUB_BROKER_URL": "http://127.0.0.1:3199",
+  "PATH": "/opt/paperclip-github-auth/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
+  "PAPERCLIP_GITHUB_REAL_GH": "/usr/bin/gh",
+  "GIT_CONFIG_COUNT": "3",
+  "GIT_CONFIG_KEY_0": "credential.helper",
+  "GIT_CONFIG_VALUE_0": "",
+  "GIT_CONFIG_KEY_1": "credential.https://github.com.helper",
+  "GIT_CONFIG_VALUE_1": "/opt/paperclip-github-auth/helpers/git-credential.mjs",
+  "GIT_CONFIG_KEY_2": "http.https://github.com.extraHeader",
+  "GIT_CONFIG_VALUE_2": "",
+  "GIT_TERMINAL_PROMPT": "0",
+  "GIT_ASKPASS": "/bin/false"
+}

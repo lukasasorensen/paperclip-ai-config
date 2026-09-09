@@ -81,11 +81,13 @@ test('CLI reports errors on stderr with empty stdout and nonzero exit', () => {
     const child = spawnSync(process.execPath, [script.pathname, ...args], {
       env: { ...process.env, GITHUB_APP_PRIVATE_KEY_PATH: join(directory, 'missing') }, encoding: 'utf8',
     });
+    assert.ifError(child.error);
     assert.equal(child.status, 1);
     assert.equal(child.stdout, '');
     assert.match(child.stderr, /^mint-token: /);
   }
   const help = spawnSync(process.execPath, [script.pathname, '--help'], { encoding: 'utf8' });
+  assert.ifError(help.error);
   assert.equal(help.status, 0);
   assert.match(help.stdout, /^Usage:/);
   assert.equal(help.stderr, '');
