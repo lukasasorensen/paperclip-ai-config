@@ -1,4 +1,8 @@
 # Logs
+# GitHub App private keys
+*.pem
+*.key
+
 logs
 *.log
 npm-debug.log*
