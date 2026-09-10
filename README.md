@@ -68,6 +68,11 @@ Host paths and operations:
 - Sandbox temporary files use `TMPDIR=/tmp`, not a host-only temporary directory.
 - Live pilot issue: **LUK-44**. Its comments contain the sanitized validation
   result and any remaining blockers; the pilot script is versioned here.
+- On **2026-09-10**, read-only verification **LUK-47** passed in the actual
+  Founding Engineer sandbox: host keys hidden, capabilities dropped, authorized
+  broker access accepted, invalid access rejected, private clone and private
+  GitHub API read successful. The push/draft-PR/cleanup portion of LUK-44 still
+  awaits its human-only **Fixed — rerun pilot** confirmation.
 
 `node scripts/check-sandbox.mjs` is a host diagnostic for this deployment (Node
 24+). It imports the installed Paperclip sandbox builder read-only and checks
@@ -383,6 +388,30 @@ report EPERM; use a test context that permits these operations without weakening
 the production sandbox policy.
 
 ## Troubleshooting
+
+### Private clone failure fixed on 2026-09-10
+
+LUK-45 exposed the previously hidden helper failure; LUK-46 narrowed it to
+`Duplicate Git credential field.` The custom helper rejected repeated fields,
+including Git's valid repeated array extensions. The
+[Git credential protocol](https://git-scm.com/docs/git-credential) permits
+multi-valued `capability[]`, `wwwauth[]`, and `state[]` attributes. The helper now
+ignores unused extensions while retaining duplicate checks for scalar fields
+and the exact HTTPS/github.com destination restriction. Unit and real-Git
+integration tests cover repeated capabilities. LUK-47 then passed the private
+clone and API-read checks with exit code 0.
+
+This was a bug in this repository's helper, not evidence of a bad PEM or missing
+App repository access. Only the standalone helper and diagnostic scripts were
+updated; Paperclip source, agent enrollment, and sandbox permissions were not
+changed by this fix. No key rotation was needed.
+
+The smoke script now includes bounded, redacted subprocess stderr instead of
+only exit 128. The helper reports only allowlisted static failure messages,
+never its raw input or arbitrary exception text. Diagnostic implementation,
+regression tests, and these instructions are tracked in this repository;
+installed copies under `/opt/paperclip-github-auth` are restored by the installer.
+Keys and runtime secrets remain outside Git as listed in the backup inventory.
 
 | Symptom | Check |
 | --- | --- |

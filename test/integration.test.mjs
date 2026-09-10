@@ -37,7 +37,8 @@ test('installed Git and gh helpers use fresh broker tokens, redact output, and f
   const env = { ...process.env, ...gitConfig, HOME: directory, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
     PAPERCLIP_GITHUB_BROKER_URL: `http://127.0.0.1:${server.address().port}`, PAPERCLIP_GITHUB_BROKER_TOKEN: 'a'.repeat(43),
     GIT_CONFIG_VALUE_1: helper };
-  const input = 'protocol=https\nhost=github.com\npath=owner/private.git\n\n';
+  // Recent Git sends both capabilities to helpers during an HTTP auth challenge.
+  const input = 'capability[]=authtype\ncapability[]=state\nprotocol=https\nhost=github.com\npath=owner/private.git\n\n';
   const git = await run('git', ['credential', 'fill'], { env }, input);
   assert.equal(git.status, 0, git.stderr); assert.match(git.stdout, /password=ghs_live_fixture_1/);
   const denied = await run('git', ['credential', 'fill'], { env }, 'protocol=https\nhost=evil.example\n\n');

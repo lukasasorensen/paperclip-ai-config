@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { requestToken } from '../helpers/client.mjs';
+import { sanitizeDiagnostic } from '../helpers/diagnostics.mjs';
 
 const writeTest = process.argv.includes('--write');
 const privateRepo = 'lukasasorensen/paperclip-internal-tools';
@@ -15,9 +16,10 @@ let directory; let checkout; let pushed = false; let pr;
 function run(command, args, cwd = directory) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
-    let out = ''; child.stdout.on('data', c => { out += c; }); child.stderr.on('data', () => {});
+    let out = ''; let stderr = ''; child.stdout.on('data', c => { out += c; });
+    child.stderr.on('data', c => { stderr = (stderr + c).slice(-8192); });
     child.once('error', () => reject(new Error(`Cannot start ${command}.`)));
-    child.once('close', code => code === 0 ? resolve(out.trim()) : reject(new Error(`${command} ${args[0]} failed (exit ${code}); no credential output displayed.`)));
+    child.once('close', code => code === 0 ? resolve(out.trim()) : reject(new Error(`${command} ${args[0]} failed (exit ${code}): ${sanitizeDiagnostic(stderr, [process.env.GH_TOKEN, process.env.PAPERCLIP_GITHUB_BROKER_TOKEN])}`)));
   });
 }
 try {

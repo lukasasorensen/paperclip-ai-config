@@ -4,6 +4,13 @@ import { credential } from '../helpers/git-credential.mjs';
 import { requestToken } from '../helpers/client.mjs';
 import { redactor } from '../helpers/redact.mjs';
 import { normalizeArgs } from '../helpers/bwrap.mjs';
+import { sanitizeDiagnostic } from '../helpers/diagnostics.mjs';
+
+test('Git diagnostics retain the cause while redacting credentials', () => {
+  const result = sanitizeDiagnostic('fatal: certificate failed\nAuthorization: Bearer secret\nhttps://user:password@github.com/repo ghs_fixture brokersecret', ['brokersecret']);
+  assert.match(result, /certificate failed/);
+  assert.doesNotMatch(result, /Bearer secret|user:password|ghs_fixture|brokersecret/);
+});
 
 test('sandbox wrapper removes only redundant merged-usr mounts and drops capabilities', () => {
   const args = ['--symlink', 'usr/bin', '/bin', '--ro-bind', '/bin', '/bin', '--ro-bind', '/usr', '/usr', '--ro-bind', '/opt/helpers', '/opt/helpers', '/usr/bin/true'];
@@ -21,6 +28,13 @@ test('Git helper only answers exact GitHub HTTPS get requests and never stores t
   }
   assert.equal(calls, 1);
   await assert.rejects(credential('get', 'host=github.com\nhost=evil.test\n', mint), /Duplicate/);
+});
+
+test('Git helper accepts repeated protocol extension arrays without relaxing host checks', async () => {
+  const extensions = 'capability[]=authtype\ncapability[]=state\nwwwauth[]=Basic realm="GitHub"\nwwwauth[]=Bearer\nstate[]=one\nstate[]=two\n';
+  assert.equal(await credential('get', extensions + 'protocol=https\nhost=github.com\n\n', async () => 'fixture'), 'username=x-access-token\npassword=fixture\n\n');
+  await assert.rejects(credential('get', extensions + 'protocol=https\nhost=github.com\nhost=evil.test\n\n'), /Duplicate/);
+  assert.equal(await credential('get', extensions + 'protocol=https\nhost=evil.test\n\n'), 'quit=true\n\n');
 });
 
 test('client uses broker authentication, rejects expired tokens, and sanitizes failures', async () => {
