@@ -16,9 +16,12 @@ install -d -m 700 "$config_dir"
 install -m 644 "$repo_dir/mint-token.mjs" "$repo_dir/broker.mjs" "$app_dir/"
 install -m 644 "$repo_dir/README.md" "$repo_dir/LICENSE" "$app_dir/"
 install -m 644 "$repo_dir/scripts/manage.mjs" "$app_dir/scripts/"
+install -m 644 "$repo_dir/scripts/smoke-agent.mjs" "$app_dir/scripts/"
+install -m 644 "$repo_dir/scripts/check-sandbox.mjs" "$app_dir/scripts/"
 for source_file in "$repo_dir"/lib/*.mjs; do install -m 644 "$source_file" "$app_dir/lib/"; done
 for source_file in "$repo_dir"/helpers/*.mjs; do install -m 755 "$source_file" "$app_dir/helpers/"; done
 ln -sfn ../helpers/gh.mjs "$app_dir/bin/gh"
+install -m 755 "$repo_dir/deploy/paperclip-bwrap" "$app_dir/bin/paperclip-bwrap"
 install -m 644 "$repo_dir/deploy/agent-env.example.json" "$repo_dir/deploy/config.example.json" "$repo_dir/deploy/service.env.example" "$app_dir/deploy/"
 install -m 644 "$repo_dir/deploy/paperclip-github-auth.service" "$stage_dir/etc/systemd/system/"
 if [ ! -f "$config_dir/config.json" ]; then install -m 600 "$repo_dir/deploy/config.example.json" "$config_dir/config.json"; fi

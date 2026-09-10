@@ -6,11 +6,11 @@ import { paperclipApi } from '../lib/paperclip.mjs';
 import { mintToken } from '../mint-token.mjs';
 
 const usage = `Usage:
-  node --env-file=/etc/paperclip-github-auth/service.env scripts/manage.mjs company CONFIG COMPANY_ID [EXISTING_GH_TOKEN_SECRET_ID]
+  node --env-file=/etc/paperclip-github-auth/service.env scripts/manage.mjs company CONFIG COMPANY_ID [EXISTING_SECRET_ID] [--secret-name NAME]
   node scripts/manage.mjs enroll CONFIG COMPANY_ID AGENT_ID OUTPUT_ENV_JSON
   node scripts/manage.mjs revoke CONFIG COMPANY_ID AGENT_ID
 
-company creates a GH_TOKEN secret (or explicitly adopts the supplied ID).
+company creates GH_TOKEN by default; --secret-name selects a dedicated agent-only secret.
 enroll creates/rotates a per-agent broker secret and writes secret-free env bindings.
 revoke removes broker authorization; remove agent env bindings separately.
 These commands change configuration and use the existing Paperclip board API.
@@ -24,7 +24,14 @@ async function saveConfig(file, config) {
 }
 
 async function main() {
-  const [action, file, companyId, extra, output, ...rest] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const nameIndex = args.indexOf('--secret-name');
+  let secretName = 'GH_TOKEN';
+  if (nameIndex !== -1) {
+    if (args[0] !== 'company' || nameIndex !== args.length - 2 || !/^[A-Za-z0-9_-]{1,120}$/.test(args[nameIndex + 1] ?? '')) throw new Error(usage);
+    secretName = args[nameIndex + 1]; args.splice(nameIndex, 2);
+  }
+  const [action, file, companyId, extra, output, ...rest] = args;
   if (action === '--help') { process.stdout.write(usage); return; }
   if (!['company', 'enroll', 'revoke'].includes(action) || !file || !/^[a-zA-Z0-9_-]{1,128}$/.test(companyId ?? '')
       || rest.length || (action === 'company' && output) || (action === 'enroll' && (!extra || !output))
@@ -42,21 +49,22 @@ async function main() {
     if (config.targets.some((target) => target.companyId === companyId)) throw new Error('Company already configured.');
     let secret;
     if (extra) {
-      secret = secrets.find((entry) => entry.id === extra && entry.name === 'GH_TOKEN' && entry.status === 'active' && entry.provider === 'local_encrypted');
-      if (!secret) throw new Error('Supplied ID must be an active local_encrypted GH_TOKEN company secret.');
+      secret = secrets.find((entry) => entry.id === extra && entry.name === secretName && entry.status === 'active' && entry.provider === 'local_encrypted');
+      if (!secret) throw new Error('Supplied ID must match the selected name and be active with local_encrypted storage.');
     } else {
-      if (secrets.some((entry) => ['GH_TOKEN', 'GITHUB_TOKEN', 'PAPERCLIP_GITHUB_TOKEN'].includes(entry.name) && entry.status !== 'deleted')) {
-        throw new Error('Existing GitHub credentials found. Review their consumers and precedence; explicitly adopt GH_TOKEN by ID.');
+      const conflictingNames = secretName === 'GH_TOKEN' ? ['GH_TOKEN', 'GITHUB_TOKEN', 'PAPERCLIP_GITHUB_TOKEN'] : [secretName];
+      if (secrets.some((entry) => conflictingNames.includes(entry.name) && entry.status !== 'deleted')) {
+        throw new Error('Existing credential found. Review its consumers and explicitly adopt it by ID.');
       }
       const value = await mintToken();
       secret = await api(`/companies/${companyId}/secrets`, {
-        method: 'POST', body: { name: 'GH_TOKEN', provider: 'local_encrypted', value: value.token, description: 'Installation token rotated by paperclip-github-auth' },
+        method: 'POST', body: { name: secretName, provider: 'local_encrypted', value: value.token, description: 'Installation token rotated by paperclip-github-auth' },
       });
     }
     if (!secret?.id) throw new Error('Secret creation returned no ID.');
-    config.targets.push({ companyId, secretId: secret.id });
+    config.targets.push({ companyId, secretId: secret.id, secretName });
     await saveConfig(file, config);
-    process.stdout.write('Company configured. The broker will publish fresh installation tokens to its GH_TOKEN secret.\n'); return;
+    process.stdout.write('Rotation target configured. Only bind this secret to the intended agents.\n'); return;
   }
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(extra)) throw new Error('Invalid agent ID.');
   const target = config.targets.find((entry) => entry.companyId === companyId);

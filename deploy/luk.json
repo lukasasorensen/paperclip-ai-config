@@ -1,0 +1,147 @@
+{
+  "companyId": "808f931c-9f34-419b-9fb4-decbda9e6e6a",
+  "companyPrefix": "LUK",
+  "githubAgentId": "afa5b6fa-291c-4f12-bb66-c766a6077ac1",
+  "secretName": "GH_APP_FOUNDING_ENGINEER",
+  "brokerUrl": "http://127.0.0.1:3199",
+  "privateKeyPath": "/etc/paperclip/github/paper-clip-agent-bot.pem",
+  "agents": [
+    {
+      "id": "1bcabe69-3a1f-49a4-8900-142c166324c4",
+      "name": "Summarizer",
+      "adapterConfigPatch": {
+        "filesystemScope": "workspace",
+        "filesystemSandboxCommand": "/opt/paperclip-github-auth/bin/paperclip-bwrap",
+        "filesystemExtraPaths": [
+          {
+            "path": "/root/.codex/auth.json",
+            "access": "ro"
+          }
+        ],
+        "env": {
+          "TMPDIR": "/tmp"
+        }
+      }
+    },
+    {
+      "id": "7c1a9fd8-52d2-4112-998a-35c47bf67fb4",
+      "name": "Reflection Coach",
+      "adapterConfigPatch": {
+        "filesystemScope": "workspace",
+        "filesystemSandboxCommand": "/opt/paperclip-github-auth/bin/paperclip-bwrap",
+        "filesystemExtraPaths": [
+          {
+            "path": "/root/.codex/auth.json",
+            "access": "ro"
+          }
+        ],
+        "env": {
+          "TMPDIR": "/tmp"
+        }
+      }
+    },
+    {
+      "id": "8bd8ecf3-4e16-412d-846f-e99a6e939825",
+      "name": "CEO",
+      "adapterConfigPatch": {
+        "filesystemScope": "workspace",
+        "filesystemSandboxCommand": "/opt/paperclip-github-auth/bin/paperclip-bwrap",
+        "filesystemExtraPaths": [
+          {
+            "path": "/root/.codex/auth.json",
+            "access": "ro"
+          }
+        ],
+        "env": {
+          "TMPDIR": "/tmp"
+        }
+      }
+    },
+    {
+      "id": "afa5b6fa-291c-4f12-bb66-c766a6077ac1",
+      "name": "Founding Engineer",
+      "adapterConfigPatch": {
+        "filesystemScope": "workspace",
+        "filesystemSandboxCommand": "/opt/paperclip-github-auth/bin/paperclip-bwrap",
+        "filesystemExtraPaths": [
+          {
+            "path": "/opt/paperclip-github-auth",
+            "access": "ro"
+          },
+          {
+            "path": "/root/.codex/auth.json",
+            "access": "ro"
+          }
+        ],
+        "env": {
+          "PATH": {
+            "type": "plain",
+            "value": "/opt/paperclip-github-auth/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin"
+          },
+          "TMPDIR": {
+            "type": "plain",
+            "value": "/tmp"
+          },
+          "GH_TOKEN": {
+            "type": "secret_ref",
+            "version": "latest",
+            "secretId": "7222662a-ffc6-4d3c-90fe-4b4b59bbcc36",
+            "projectionClass": "unclassified",
+            "projectionAllowlistKey": null
+          },
+          "GIT_ASKPASS": {
+            "type": "plain",
+            "value": "/bin/false"
+          },
+          "GIT_CONFIG_COUNT": {
+            "type": "plain",
+            "value": "3"
+          },
+          "GIT_CONFIG_KEY_0": {
+            "type": "plain",
+            "value": "credential.helper"
+          },
+          "GIT_CONFIG_KEY_1": {
+            "type": "plain",
+            "value": "credential.https://github.com.helper"
+          },
+          "GIT_CONFIG_KEY_2": {
+            "type": "plain",
+            "value": "http.https://github.com.extraHeader"
+          },
+          "GIT_CONFIG_VALUE_0": {
+            "type": "plain",
+            "value": ""
+          },
+          "GIT_CONFIG_VALUE_1": {
+            "type": "plain",
+            "value": "/opt/paperclip-github-auth/helpers/git-credential.mjs"
+          },
+          "GIT_CONFIG_VALUE_2": {
+            "type": "plain",
+            "value": ""
+          },
+          "GIT_TERMINAL_PROMPT": {
+            "type": "plain",
+            "value": "0"
+          },
+          "PAPERCLIP_GITHUB_REAL_GH": {
+            "type": "plain",
+            "value": "/usr/bin/gh"
+          },
+          "PAPERCLIP_GITHUB_BROKER_URL": {
+            "type": "plain",
+            "value": "http://127.0.0.1:3199"
+          },
+          "PAPERCLIP_GITHUB_BROKER_TOKEN": {
+            "type": "secret_ref",
+            "version": "latest",
+            "secretId": "c41f49b5-7c53-4920-8dee-2c8c0f448171",
+            "projectionClass": "unclassified",
+            "projectionAllowlistKey": null
+          }
+        }
+      }
+    }
+  ]
+}

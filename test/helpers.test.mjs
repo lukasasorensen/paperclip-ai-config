@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import { credential } from '../helpers/git-credential.mjs';
 import { requestToken } from '../helpers/client.mjs';
 import { redactor } from '../helpers/redact.mjs';
+import { normalizeArgs } from '../helpers/bwrap.mjs';
+
+test('sandbox wrapper removes only redundant merged-usr mounts and drops capabilities', () => {
+  const args = ['--symlink', 'usr/bin', '/bin', '--ro-bind', '/bin', '/bin', '--ro-bind', '/usr', '/usr', '--ro-bind', '/opt/helpers', '/opt/helpers', '/usr/bin/true'];
+  assert.deepEqual(normalizeArgs(args), ['--cap-drop', 'ALL', '--symlink', 'usr/bin', '/bin', '--ro-bind', '/usr', '/usr', '--ro-bind', '/opt/helpers', '/opt/helpers', '/usr/bin/true']);
+  assert.deepEqual(normalizeArgs(['--ro-bind', '/bin', '/bin']), ['--cap-drop', 'ALL', '--ro-bind', '/bin', '/bin']);
+});
 
 test('Git helper only answers exact GitHub HTTPS get requests and never stores tokens', async () => {
   let calls = 0;

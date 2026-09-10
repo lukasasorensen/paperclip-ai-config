@@ -31,6 +31,58 @@ only a separate application, configuration directory, and systemd unit.
 There is no Paperclip source patch to reapply. After updates, still run a smoke
 test: public APIs and sandbox configuration may change in future versions.
 
+## LUK deployment
+
+The live deployment uses only **Founding Engineer** (`afa5b6fa-291c-4f12-bb66-c766a6077ac1`)
+in company LUK (`808f931c-9f34-419b-9fb4-decbda9e6e6a`). Its dedicated stored token
+name is `GH_APP_FOUNDING_ENGINEER`, bound as that agent's `GH_TOKEN`. No company-wide
+GH_TOKEN/GITHUB_TOKEN is configured by this deployment. CEO, Summarizer, and
+Reflection Coach receive no GitHub or broker secret bindings.
+
+The secret-free settings snapshot is `deploy/luk.json`. Merge its per-agent
+configuration patches when restoring; preserve unrelated settings. Stored secret
+IDs require the corresponding Paperclip database/secret backup, or re-enrollment.
+Broker bearer hashes remain only in protected host configuration, not this file.
+
+Host paths and operations:
+
+- App key: `/etc/paperclip/github/paper-clip-agent-bot.pem`, service-account-owned,
+  mode 0600; parent directory mode 0700.
+- Board key source: `/root/.config/paperclip/github-auth-board-key`; protected
+  service copy: `/etc/paperclip-github-auth/paperclip-api-key`. The named key
+  `paperclip-github-auth` expires **2026-12-08**; rotate it before that date and
+  replace the service copy securely. The broker reads it for each API request.
+- Unit: `paperclip-github-auth.service`; local health URL:
+  `http://127.0.0.1:3199/healthz`.
+- Pre-deployment adapter backup: `/etc/paperclip-github-auth/luk-agents-before.json`
+  (restricted, untracked). Back up this file with the other deployment secrets.
+- Bubblewrap was installed through Debian's package manager. Workspace confinement
+  was configured for LUK agents; two built-in agents remain paused. Paperclip can
+  resynchronize built-in agent settings, so recheck confinement before resuming
+  a paused built-in agent or after upgrades.
+- The existing Codex login is a symlink to `/root/.codex/auth.json`. That exact
+  file is mounted read-only so agents retain their model login; the rest of
+  `/root/.codex` and GitHub credential directories are not exposed by this mount.
+  Renew the shared model login on the host if required; sandboxed agents cannot
+  persist changes through this read-only file mount.
+- Sandbox temporary files use `TMPDIR=/tmp`, not a host-only temporary directory.
+- Live pilot issue: **LUK-44**. Its comments contain the sanitized validation
+  result and any remaining blockers; the pilot script is versioned here.
+
+`node scripts/check-sandbox.mjs` is a host diagnostic for this deployment (Node
+24+). It imports the installed Paperclip sandbox builder read-only and checks
+temporary-file writes, hidden host keys and dropped capabilities. Its fixed
+workspace/source paths are specific to this server; it does not authenticate to
+GitHub or replace the live agent pilot. If LUK-44 requests a human-only unblock
+confirmation, the operator must accept it in Paperclip before the pilot resumes.
+
+To create a replacement board key, use Paperclip's `auth login --no-browser`
+browser approval flow, then `token board create --name paperclip-github-auth
+--ttl-days 90 --json` using the same `--api-base`. Capture `.key.token` directly
+into a mode-0600 file without printing the JSON. Board keys inherit the operator's
+access; the company argument supplies audit context, not a security restriction.
+The service must never receive an agent API key as a substitute.
+
 Integration interfaces were checked against the installed Paperclip source on
 2026-09-09: board API key authentication, company secret list/create/rotate,
 agent metadata, filesystem sandbox settings, and agent environment bindings.
@@ -38,6 +90,25 @@ An **agent API key cannot rotate company secrets**; the service needs a board
 API key authorized for the configured companies.
 
 ## Access boundaries
+
+For **agent-only** credentials, register the rotation target with
+`--secret-name GH_APP_FOUNDING_ENGINEER` instead of the default name. Bind that
+secret as the selected agent's `GH_TOKEN` env variable. A custom secret name is
+not discovered by Paperclip's company-wide managed-clone provider. That agent
+clones/fetches through its helpers into its own workspace; private repo-only
+managed clones are not enabled for the rest of the company.
+
+For root-launched local agents, the installer also supplies
+`/opt/paperclip-github-auth/bin/paperclip-bwrap`: it invokes the installed
+Bubblewrap with `--cap-drop ALL`. Use it as `filesystemSandboxCommand`, together
+with `filesystemScope: "workspace"`. Other untrusted host agents must also be
+confined to keep them from reading host credentials directly.
+
+The wrapper also removes redundant read-only binds for merged-`/usr` system
+symlinks when Paperclip emits both forms. This avoids Bubblewrap's "Can't mount
+on symlink destination /bin" error on this Debian host. It preserves the /usr
+read-only mount and all other arguments; no Paperclip source modification is
+needed. Recheck this compatibility wrapper when updating Paperclip/Bubblewrap.
 
 - One GitHub App installation per broker. In GitHub, select the private repos
   and grant Contents read/write and Pull requests read/write. Add other
@@ -69,6 +140,7 @@ API key authorized for the configured companies.
 | --- | --- | --- |
 | `/opt/paperclip-github-auth/broker.mjs`, `mint-token.mjs`, `lib/` | Same files here | Reinstall a recorded Git revision |
 | `/opt/paperclip-github-auth/helpers/`, `bin/gh` | `helpers/`; installer creates symlink | Reinstall |
+| `/opt/paperclip-github-auth/bin/paperclip-bwrap` | `deploy/paperclip-bwrap` | Reinstall |
 | `/opt/paperclip-github-auth/scripts/manage.mjs` | `scripts/manage.mjs` | Reinstall |
 | `/opt/paperclip-github-auth/deploy/` | `deploy/` | Reinstall examples |
 | `/etc/systemd/system/paperclip-github-auth.service` | `deploy/paperclip-github-auth.service` | Reinstall |
@@ -154,6 +226,12 @@ sudo -u paperclip-github-auth /usr/bin/node --env-file=/etc/paperclip-github-aut
 This creates an encrypted company `GH_TOKEN` secret containing an initial
 installation token, and saves its ID. No agent is bound. It refuses creation if
 an existing GitHub credential is detected.
+
+For access only through explicitly bound agents, append
+`--secret-name GH_APP_FOUNDING_ENGINEER`. The target records `secretName` and
+publication verifies it. If adopting an existing secret with a custom name,
+include both its ID and `--secret-name NAME`. Existing targets without this field
+retain the legacy GH_TOKEN behavior.
 
 To deliberately adopt an existing active `local_encrypted` **GH_TOKEN** secret,
 append its secret ID to this command. Adoption allows the broker to replace its
@@ -263,6 +341,16 @@ revocation affects other agents sharing the installation. Re-enroll and apply
 updated bindings to restore access; re-enrollment rotates its broker key.
 
 ## Pilot and acceptance checks
+
+For this deployment, `scripts/smoke-agent.mjs` provides a reproducible pilot.
+It must run inside the Founding Engineer sandbox: it refuses execution if host
+credential paths are visible or Linux capabilities remain effective. It clones
+`lukasasorensen/paperclip-internal-tools` read-only. With `--write`, it additionally
+pushes a temporary branch to `lukasasorensen/paperclip-ai-config`, opens/closes a
+draft PR, and deletes the branch. It never changes a default branch. These test
+repository names are explicit in the script; review them before reuse elsewhere.
+Run `node /opt/paperclip-github-auth/scripts/smoke-agent.mjs --write` only as the
+enrolled agent. All executable pilot logic is tracked here, not only on the host.
 
 Use a dedicated private test repo and the actual Paperclip agent sandbox:
 

@@ -81,6 +81,19 @@ test('Paperclip publication uses metadata and existing rotate API, refusing wron
   secret.companyId = 'other'; await assert.rejects(publishToken(api, target, 'TOKEN'), /configured company/);
 });
 
+test('dedicated secret names support agent-only publication without global GH_TOKEN discovery', async () => {
+  const target = { companyId: 'company', secretId: 'private', secretName: 'GH_APP_FOUNDING_ENGINEER' };
+  const calls = [];
+  const api = async (path, options) => {
+    calls.push({ path, options });
+    return [{ id: 'private', companyId: 'company', name: target.secretName, status: 'active', provider: 'local_encrypted' }];
+  };
+  await publishToken(api, target, 'TOKEN');
+  assert.equal(calls[1].path, '/secrets/private/rotate');
+  await assert.rejects(publishToken(api, { ...target, secretName: 'GH_TOKEN' }, 'TOKEN'));
+  assert.throws(() => validateConfig({ ...config(), targets: [{ ...target, secretName: '../invalid' }] }));
+});
+
 test('API errors never include board keys or remote response bodies', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'paperclip-api-test-'));
   try {

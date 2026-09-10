@@ -1,0 +1,3 @@
+#!/bin/sh
+# Workspace confinement for root-launched local agents must drop host capabilities.
+exec /usr/bin/node /opt/paperclip-github-auth/helpers/bwrap.mjs "$@"

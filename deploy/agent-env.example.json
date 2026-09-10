@@ -4,6 +4,7 @@
   "PAPERCLIP_GITHUB_BROKER_URL": "http://127.0.0.1:3199",
   "PATH": "/opt/paperclip-github-auth/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
   "PAPERCLIP_GITHUB_REAL_GH": "/usr/bin/gh",
+  "TMPDIR": "/tmp",
   "GIT_CONFIG_COUNT": "3",
   "GIT_CONFIG_KEY_0": "credential.helper",
   "GIT_CONFIG_VALUE_0": "",
